@@ -319,3 +319,33 @@ if image_to_process is not None:
 
 else:
     st.info("👆 Please upload a leaf image or select a sample image above to see live disease detection results.")
+
+# ---------------------------------------------------------
+# Vercel / WSGI Serverless Function Compatibility Entrypoint
+# ---------------------------------------------------------
+def handler(environ=None, start_response=None):
+    if start_response is not None:
+        status = '200 OK'
+        headers = [('Content-type', 'text/html; charset=utf-8')]
+        start_response(status, headers)
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head><title>Leaf Disease Detection System</title></head>
+    <body style="font-family: system-ui, sans-serif; padding: 2rem; text-align: center; background: #f8fafc;">
+        <h1 style="color: #1b4332;">🍃 Leaf Disease Detection System</h1>
+        <p>This application is designed for Streamlit.</p>
+        <p><a href="https://share.streamlit.io" style="background: #2d6a4f; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">Deploy on Streamlit Community Cloud</a></p>
+    </body>
+    </html>
+    """
+    if start_response is not None:
+        return [html_content.encode('utf-8')]
+    return {
+        "statusCode": 200,
+        "headers": {"Content-Type": "text/html"},
+        "body": html_content
+    }
+
+app = handler
+application = handler
