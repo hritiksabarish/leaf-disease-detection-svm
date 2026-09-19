@@ -1,0 +1,29 @@
+# Credentials
+kaggle.json
+.env
+*.token
+
+# Datasets & Outputs
+data/raw/
+data/plantdisease/
+data/plantvillage/
+*.zip
+*.tar.gz
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
