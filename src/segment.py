@@ -62,9 +62,12 @@ def segment_diseased_region(rgb_img, hsv_img, leaf_mask, k=3):
         diseased_mask = np.zeros_like(leaf_mask)
         healthy_mask = leaf_mask.copy()
     else:
+        # Set OpenCV RNG seed for deterministic K-Means
+        cv2.setRNGSeed(42)
+        
         # K-Means clustering on HSV values of leaf pixels
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
-        flags = cv2.KMEANS_RANDOM_CENTERS
+        flags = cv2.KMEANS_PP_CENTERS
         compactness, labels, centers = cv2.kmeans(hsv_pixels, k, None, criteria, 10, flags)
 
         # Reconstruct label map for the leaf
@@ -109,6 +112,30 @@ def segment_diseased_region(rgb_img, hsv_img, leaf_mask, k=3):
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     diseased_mask = cv2.morphologyEx(diseased_mask, cv2.MORPH_OPEN, kernel, iterations=1)
     diseased_mask = cv2.bitwise_and(diseased_mask, leaf_mask)
+    
+    # --- LESION VALIDITY CHECK ---
+    # To prevent shadows/veins on perfectly healthy leaves from being universally
+    # labeled as lesions, verify the candidate mask contains genuine necrotic color.
+    # Necrotic: Brown/Yellow/Red (Hue <= 33 or Hue >= 150) with sufficient saturation & value.
+    h_channel = hsv_img[:, :, 0]
+    s_channel = hsv_img[:, :, 1]
+    v_channel = hsv_img[:, :, 2]
+    
+    true_necrotic = (
+        ((h_channel <= 33) | (h_channel >= 150)) & 
+        (s_channel > 25) & 
+        (v_channel > 25) & 
+        (diseased_mask > 0)
+    )
+    
+    leaf_area = np.count_nonzero(leaf_mask)
+    true_necrotic_area = np.count_nonzero(true_necrotic)
+    
+    # Require at least 0.5% of the leaf to be definitively necrotic, OR at least 50 absolute pixels
+    if true_necrotic_area < (0.005 * leaf_area) and true_necrotic_area < 50:
+        diseased_mask = np.zeros_like(leaf_mask)
+    # -----------------------------
+
     healthy_mask = cv2.bitwise_and(leaf_mask, cv2.bitwise_not(diseased_mask))
 
     # Segmented ROI

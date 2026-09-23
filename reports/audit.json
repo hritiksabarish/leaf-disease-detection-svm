@@ -1,0 +1,84 @@
+{
+  "classes": {
+    "Potato___Early_blight": {
+      "name": "Potato___Early_blight",
+      "images": 205,
+      "extensions": [
+        ".jpg"
+      ],
+      "valid": 205,
+      "invalid": 0,
+      "provenance": "KAGGLE (emmarex/plantdisease)"
+    },
+    "Potato___healthy": {
+      "name": "Potato___healthy",
+      "images": 157,
+      "extensions": [
+        ".jpg"
+      ],
+      "valid": 157,
+      "invalid": 0,
+      "provenance": "KAGGLE (emmarex/plantdisease)"
+    },
+    "Tomato___healthy": {
+      "name": "Tomato___healthy",
+      "images": 5,
+      "extensions": [
+        ".jpg"
+      ],
+      "valid": 5,
+      "invalid": 0,
+      "provenance": "SYNTHETIC (from download_data.py fallback)"
+    },
+    "Tomato___Late_blight": {
+      "name": "Tomato___Late_blight",
+      "images": 5,
+      "extensions": [
+        ".jpg"
+      ],
+      "valid": 5,
+      "invalid": 0,
+      "provenance": "SYNTHETIC (from download_data.py fallback)"
+    }
+  },
+  "duplicates": [],
+  "invalid": [],
+  "total_images": 372,
+  "total_valid": 372,
+  "total_invalid": 0,
+  "total_classes": 4,
+  "kaggle_structure": [
+    "PlantVillage",
+    "PlantVillage\\Pepper__bell___Bacterial_spot",
+    "PlantVillage\\Pepper__bell___healthy",
+    "PlantVillage\\PlantVillage",
+    "PlantVillage\\Potato___Early_blight",
+    "PlantVillage\\Potato___healthy",
+    "PlantVillage\\Potato___Late_blight",
+    "PlantVillage\\Tomato_Bacterial_spot",
+    "PlantVillage\\Tomato_Early_blight",
+    "PlantVillage\\Tomato_healthy",
+    "PlantVillage\\Tomato_Late_blight",
+    "PlantVillage\\Tomato_Leaf_Mold",
+    "PlantVillage\\Tomato_Septoria_leaf_spot",
+    "PlantVillage\\Tomato_Spider_mites_Two_spotted_spider_mite",
+    "PlantVillage\\Tomato__Target_Spot",
+    "PlantVillage\\Tomato__Tomato_mosaic_virus",
+    "PlantVillage\\Tomato__Tomato_YellowLeaf__Curl_Virus",
+    "PlantVillage\\PlantVillage\\Pepper__bell___Bacterial_spot",
+    "PlantVillage\\PlantVillage\\Pepper__bell___healthy",
+    "PlantVillage\\PlantVillage\\Potato___Early_blight",
+    "PlantVillage\\PlantVillage\\Potato___healthy",
+    "PlantVillage\\PlantVillage\\Potato___Late_blight",
+    "PlantVillage\\PlantVillage\\Tomato_Bacterial_spot",
+    "PlantVillage\\PlantVillage\\Tomato_Early_blight",
+    "PlantVillage\\PlantVillage\\Tomato_healthy",
+    "PlantVillage\\PlantVillage\\Tomato_Late_blight",
+    "PlantVillage\\PlantVillage\\Tomato_Leaf_Mold",
+    "PlantVillage\\PlantVillage\\Tomato_Septoria_leaf_spot",
+    "PlantVillage\\PlantVillage\\Tomato_Spider_mites_Two_spotted_spider_mite",
+    "PlantVillage\\PlantVillage\\Tomato__Target_Spot",
+    "PlantVillage\\PlantVillage\\Tomato__Tomato_mosaic_virus",
+    "PlantVillage\\PlantVillage\\Tomato__Tomato_YellowLeaf__Curl_Virus"
+  ]
+}

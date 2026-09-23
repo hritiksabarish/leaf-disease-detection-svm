@@ -1,116 +1,65 @@
-# Leaf Disease Detection Using Image Segmentation & Feature Extraction
+# Lightweight Multi-Crop Leaf Disease Detection using SVM
 
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](https://python.org)
-[![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-blue.svg)](https://opencv.org)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-Machine%20Learning-orange.svg)](https://scikit-learn.org)
-[![Streamlit](https://img.shields.io/badge/Streamlit-Web%20App-red.svg)](https://streamlit.io)
+## Overview
+This project presents a lightweight, handcrafted-feature machine learning framework for plant leaf disease detection. It processes raw leaf images through a series of deterministic steps to extract meaningful agricultural metrics, which are then classified by a Support Vector Machine (SVM).
 
-A complete college mini-project implementation for automated **Leaf Disease Detection** utilizing classical computer vision techniques (Otsu thresholding, HSV K-Means clustering), texture analysis (GLCM), color and contour shape feature extraction, and Support Vector Machine (SVM) classification.
+The complete pipeline includes:
+- Image preprocessing (blurring, colorspace conversion)
+- Leaf and lesion segmentation (Otsu thresholding, K-Means clustering)
+- Color features extraction
+- GLCM texture features extraction
+- Leaf shape features extraction
+- Lesion shape features extraction
+- Feature selection analysis (ANOVA F-value)
+- SVM kernel comparison (Linear, RBF, Polynomial, Quadratic)
+- Controlled perturbation robustness evaluation
+- Efficiency benchmarking
+- Treatment recommendation knowledge base
+- Streamlit application
 
----
+## Dataset
+The dataset utilized in the research contains:
+- **1,952 authentic images**
+- **3 crops** (Pepper, Potato, Tomato)
+- **10 classes** (Healthy and Diseased variants)
 
-## 📁 Project Structure
+*Note: The raw image dataset is kept outside this repository due to its large size and dataset-management considerations. The repository contains the source code, tests, pipeline algorithms, and the final validated model artifact required for inference.*
 
-```
-leaf-disease-detection/
-├── data/
-│   └── subset/             # PlantVillage subset (~150-200 images per class)
-│       ├── Tomato___Late_blight/
-│       ├── Tomato___healthy/
-│       ├── Potato___Early_blight/
-│       └── Potato___healthy/
-├── src/
-│   ├── preprocess.py       # Image resizing (256x256), Gaussian Blur, RGB/HSV conversion
-│   ├── segment.py          # Otsu background removal & HSV K-Means (k=3) spot extraction
-│   ├── features.py         # Color (HSV mean/std), GLCM texture, shape contour features
-│   ├── classify.py         # Dataset builder, 80/20 split, SVM training & metrics
-│   └── pipeline.py         # End-to-end processing & 3-panel visualization generator
-├── scripts/
-│   └── download_data.py    # Kaggle API downloader & dataset subset generator
-├── notebooks/
-│   └── demo.ipynb          # Step-by-step Jupyter Notebook walkthrough
-├── results/                # Output visualizations, confusion matrix & saved model pack
-├── app.py                  # Custom-styled Streamlit web application
-├── requirements.txt        # Python dependencies
-├── .gitignore              # Ignores credentials, cached datasets, and bytecode
-└── README.md               # Setup and usage guide
-```
+## Model
+The **Primary evaluated configuration** identified during Phase 4 is:
+**RBF SVM + All24 features**
 
----
+On the rigorously held-out test set, this model achieved:
+- **Accuracy**: 79.28%
+- **Macro-F1**: 79.27%
 
-## ⚡ Quick Start & Installation
+*Note: These are held-out research evaluation metrics over the entire dataset test split, and are NOT the absolute accuracy guarantee of every individual uploaded image.*
 
-### 1. Prerequisites & Dependencies
-Clone or open this repository, then install dependencies:
+## Efficiency
+The framework was formally benchmarked for computational efficiency on a standard CPU.
+- **End-to-end latency**: ~58.66 ms/image
+- **Throughput**: ~17.05 images/sec
+- **SVM prediction time**: ~0.12 ms/image
+
+*Note: These measurements were obtained in the documented desktop CPU benchmark environment. Feature extraction accounts for >99.8% of the processing time. We do not claim experimentally validated mobile deployment, though the microscopic model footprint (<300 KB) suggests strong suitability for edge environments.*
+
+## Robustness
+Robustness was comprehensively evaluated using controlled/synthetic perturbations across 15 degradation states (blur, noise, contrast, brightness).
+*Explicit limitation: Natural field-image validation was not completed due to upstream dataset authentication limits.*
+
+## Application
+To launch the integrated Streamlit application (which includes the frozen diagnostic model and the deterministic agricultural treatment knowledge base), run:
+
 ```bash
-pip install -r requirements.txt
+python -m streamlit run src/app.py
 ```
 
-### 2. Dataset Setup via Kaggle API
-Run the automated dataset download script:
-```bash
-python scripts/download_data.py
-```
-> **Note**: The script checks for `KAGGLE_API_TOKEN` environment variable or `kaggle.json` credentials. It downloads the dataset (`emmarex/plantdisease`), extracts the 4 target classes into `data/subset/` capped at 200 images per class, and ensures fallback samples are ready.
+## Limitations
+- **Scope**: Diagnosis is strictly limited to the trained 3 crops and 10 classes.
+- **Robustness**: Evaluated via controlled perturbations only; natural field evaluation is unavailable.
+- **Confidence**: Probability confidence is unavailable because the SVC uses `probability=False` to optimize training efficiency.
+- **Hardware**: Actual mobile/edge deployment was not experimentally tested.
+- **Recommendations**: The integrated treatment knowledge base is strictly informational and relies entirely on the classifier's algorithmic prediction.
 
----
-
-## 🚀 Running the Project
-
-### 1. Train the Classifier & Evaluate Metrics
-Train the SVM model on extracted color, GLCM texture, and contour shape features:
-```bash
-python src/classify.py
-```
-**Output:**
-- Prints Accuracy, Precision, Recall, and F1 Score.
-- Saves `confusion_matrix.png` to `results/`.
-- Saves serialized model pack to `results/model.joblib`.
-
-### 2. Run Pipeline on Sample Images
-Process sample images end-to-end and generate side-by-side visualizations (`Original` | `Segmented Mask` | `Highlighted Overlay`):
-```bash
-python src/pipeline.py
-```
-Outputs `pipeline_sample_1.png` ... `pipeline_sample_5.png` in `results/`.
-
-### 3. Launch the Streamlit Web Application
-Start the interactive UI:
-```bash
-streamlit run app.py
-```
-Open your browser at `http://localhost:8501`. Features include:
-- Upload any leaf photo or choose pre-loaded test samples.
-- Side-by-side 3-panel pipeline visualization.
-- Diagnostic card with disease prediction & confidence percentage.
-- Feature breakdown table (Color, GLCM Texture, Shape metrics).
-
----
-
-## 🔬 Image Processing & ML Pipeline Details
-
-1. **Preprocessing (`preprocess.py`)**:
-   - Resizes images to $256 \times 256$.
-   - Applies $5 \times 5$ Gaussian Blur for noise reduction.
-   - Converts RGB $\rightarrow$ Grayscale and HSV color spaces.
-
-2. **Segmentation (`segment.py`)**:
-   - **Background Isolation**: Otsu's thresholding combined with Excess Green (ExG) index ($2G - R - B$).
-   - **Diseased Spot Extraction**: K-means clustering ($k=3$) in HSV space + necrotic color thresholding to segment lesion spots from healthy green foliage.
-
-3. **Feature Extraction (`features.py`)**:
-   - **Color**: Mean and standard deviation of H, S, V channels within the diseased ROI.
-   - **Texture**: Gray Level Co-occurrence Matrix (GLCM) metrics (`contrast`, `dissimilarity`, `homogeneity`, `energy`, `correlation`, `ASM`).
-   - **Shape**: Lesion Contour `area`, `perimeter`, `eccentricity`, `extent`, `solidity`, and `compactness` metric ratio ($4\pi A / P^2$).
-
-4. **Classification (`classify.py`)**:
-   - Standardized scaling via `StandardScaler`.
-   - Support Vector Classifier (SVM) with RBF Kernel ($C=10.0$).
-   - 80/20 train/test stratified split.
-
----
-
-## 📜 Group Metadata
-
-- **Project**: Leaf Disease Detection Using Image Segmentation & Feature Extraction
-- **Course/Group**: IPA Project Group 12
+## Disclaimer
+⚠️ The application is a research/educational prototype and should not be treated as definitive agricultural diagnosis. Verify important decisions with qualified agricultural professionals and applicable local guidance.

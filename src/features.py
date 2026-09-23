@@ -31,36 +31,49 @@ def extract_color_features(hsv_image, mask):
 
 def extract_glcm_features(gray_image, mask):
     """
-    Extracts GLCM texture features (contrast, dissimilarity, homogeneity, energy, correlation, ASM).
+    Extracts GLCM texture features, strictly removing background bias by using a background class.
     """
-    if mask is not None and np.count_nonzero(mask) > 0:
-        # Mask out non-region pixels
-        region = cv2.bitwise_and(gray_image, gray_image, mask=mask)
-    else:
-        region = gray_image
+    if mask is None or np.count_nonzero(mask) == 0:
+        return { 'glcm_contrast': 0.0, 'glcm_dissimilarity': 0.0, 'glcm_homogeneity': 0.0, 
+                 'glcm_energy': 0.0, 'glcm_correlation': 0.0, 'glcm_asm': 0.0 }
 
-    # Reduce gray levels to 32 bins for speed & robustness
-    region_quantized = (region // 8).astype(np.uint8)
-    
-    # Compute GLCM at distances 1, 3 and angles 0, 45, 90, 135 deg
+    # Get bounding box to reduce computation
+    x, y, w, h = cv2.boundingRect(mask)
+    crop_gray = gray_image[y:y+h, x:x+w]
+    crop_mask = mask[y:y+h, x:x+w]
+
+    # Quantize to 32 levels
+    region_quantized = (crop_gray // 8).astype(np.uint8)
+    # Assign background to a special 33rd bin (index 32)
+    region_quantized[crop_mask == 0] = 32
+
     distances = [1, 3]
     angles = [0, np.pi/4, np.pi/2, 3*np.pi/4]
     
-    glcm = graycomatrix(
+    # Compute unnormalized GLCM with 33 levels
+    glcm_full = graycomatrix(
         region_quantized,
         distances=distances,
         angles=angles,
-        levels=32,
+        levels=33,
         symmetric=True,
-        normed=True
+        normed=False
     )
 
-    contrast = np.mean(graycoprops(glcm, 'contrast'))
-    dissimilarity = np.mean(graycoprops(glcm, 'dissimilarity'))
-    homogeneity = np.mean(graycoprops(glcm, 'homogeneity'))
-    energy = np.mean(graycoprops(glcm, 'energy'))
-    correlation = np.mean(graycoprops(glcm, 'correlation'))
-    asm = np.mean(graycoprops(glcm, 'ASM'))
+    # Slice out the background bin (index 32)
+    glcm = glcm_full[:32, :32, :, :]
+    
+    # Re-normalize
+    glcm_sum = np.sum(glcm, axis=(0, 1), keepdims=True)
+    glcm_sum[glcm_sum == 0] = 1 # Avoid division by zero
+    glcm_normed = glcm / glcm_sum
+
+    contrast = np.mean(graycoprops(glcm_normed, 'contrast'))
+    dissimilarity = np.mean(graycoprops(glcm_normed, 'dissimilarity'))
+    homogeneity = np.mean(graycoprops(glcm_normed, 'homogeneity'))
+    energy = np.mean(graycoprops(glcm_normed, 'energy'))
+    correlation = np.mean(graycoprops(glcm_normed, 'correlation'))
+    asm = np.mean(graycoprops(glcm_normed, 'ASM'))
 
     return {
         'glcm_contrast': float(contrast),
@@ -71,55 +84,50 @@ def extract_glcm_features(gray_image, mask):
         'glcm_asm': float(asm)
     }
 
-def extract_shape_features(mask):
+def extract_shape_features(mask, prefix='shape_'):
     """
-    Extracts geometric contour shape features: area, perimeter, eccentricity, extent, solidity, metric ratio.
+    Extracts geometric contour shape features.
+    Prefix allows separation of leaf vs lesion features.
     """
     if mask is None or np.count_nonzero(mask) == 0:
         return {
-            'shape_area': 0.0,
-            'shape_perimeter': 0.0,
-            'shape_eccentricity': 0.0,
-            'shape_extent': 0.0,
-            'shape_solidity': 0.0,
-            'shape_compactness': 0.0
+            f'{prefix}area': 0.0,
+            f'{prefix}perimeter': 0.0,
+            f'{prefix}eccentricity': 0.0,
+            f'{prefix}extent': 0.0,
+            f'{prefix}solidity': 0.0,
+            f'{prefix}compactness': 0.0
         }
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
     if not contours:
         return {
-            'shape_area': 0.0,
-            'shape_perimeter': 0.0,
-            'shape_eccentricity': 0.0,
-            'shape_extent': 0.0,
-            'shape_solidity': 0.0,
-            'shape_compactness': 0.0
+            f'{prefix}area': 0.0,
+            f'{prefix}perimeter': 0.0,
+            f'{prefix}eccentricity': 0.0,
+            f'{prefix}extent': 0.0,
+            f'{prefix}solidity': 0.0,
+            f'{prefix}compactness': 0.0
         }
 
-    # Aggregate over contours
     total_area = sum(cv2.contourArea(c) for c in contours)
     total_perimeter = sum(cv2.arcLength(c, True) for c in contours)
 
-    # Largest contour for shape parameters
     largest_contour = max(contours, key=cv2.contourArea)
     area = cv2.contourArea(largest_contour)
     perimeter = cv2.arcLength(largest_contour, True)
 
-    # Bounding Box Extent
     x, y, w, h = cv2.boundingRect(largest_contour)
     rect_area = w * h
     extent = area / float(rect_area) if rect_area > 0 else 0.0
 
-    # Convex Hull Solidity
     hull = cv2.convexHull(largest_contour)
     hull_area = cv2.contourArea(hull)
     solidity = area / float(hull_area) if hull_area > 0 else 0.0
 
-    # Compactness / Metric Ratio (4 * pi * area / perimeter^2)
     compactness = (4.0 * np.pi * area) / (perimeter ** 2) if perimeter > 0 else 0.0
 
-    # Eccentricity via Minimum Enclosing Ellipse or FitEllipse
     eccentricity = 0.0
     if len(largest_contour) >= 5:
         try:
@@ -132,31 +140,35 @@ def extract_shape_features(mask):
             eccentricity = 0.0
 
     return {
-        'shape_area': float(total_area),
-        'shape_perimeter': float(total_perimeter),
-        'shape_eccentricity': float(eccentricity),
-        'shape_extent': float(extent),
-        'shape_solidity': float(solidity),
-        'shape_compactness': float(compactness)
+        f'{prefix}area': float(total_area),
+        f'{prefix}perimeter': float(total_perimeter),
+        f'{prefix}eccentricity': float(eccentricity),
+        f'{prefix}extent': float(extent),
+        f'{prefix}solidity': float(solidity),
+        f'{prefix}compactness': float(compactness)
     }
 
 def extract_all_features(rgb_image, hsv_image, gray_image, diseased_mask, leaf_mask):
     """
-    Combines color, texture, and shape features into a dictionary and 1D vector.
+    Combines color, texture, and distinct leaf/lesion shape features.
     """
-    # Use diseased_mask if non-empty, otherwise leaf_mask (for healthy leaves)
-    feature_mask = diseased_mask if np.count_nonzero(diseased_mask) > 0 else leaf_mask
+    # Color and Texture should only measure the diseased region if it exists
+    color_mask = diseased_mask if np.count_nonzero(diseased_mask) > 0 else leaf_mask
+    texture_mask = diseased_mask if np.count_nonzero(diseased_mask) > 0 else leaf_mask
 
-    color_feats = extract_color_features(hsv_image, feature_mask)
-    glcm_feats = extract_glcm_features(gray_image, feature_mask)
-    shape_feats = extract_shape_features(feature_mask)
+    color_feats = extract_color_features(hsv_image, color_mask)
+    glcm_feats = extract_glcm_features(gray_image, texture_mask)
+    
+    # SEPARATE Shape Features to prevent leakage!
+    leaf_shape_feats = extract_shape_features(leaf_mask, prefix='leaf_')
+    lesion_shape_feats = extract_shape_features(diseased_mask, prefix='lesion_')
 
     all_feats = {}
     all_feats.update(color_feats)
     all_feats.update(glcm_feats)
-    all_feats.update(shape_feats)
+    all_feats.update(leaf_shape_feats)
+    all_feats.update(lesion_shape_feats)
 
-    # Feature vector as float32 array
     feature_names = sorted(all_feats.keys())
     feature_vector = np.array([all_feats[k] for k in feature_names], dtype=np.float32)
 

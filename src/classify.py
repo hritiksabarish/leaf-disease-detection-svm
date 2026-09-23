@@ -34,10 +34,17 @@ def build_dataset(data_dir=DATA_SUBSET_DIR):
     classes = [d.name for d in data_dir.iterdir() if d.is_dir()]
     print(f"Found {len(classes)} classes in dataset: {classes}")
 
+    total_physical = 0
+    total_extracted = 0
+
     for cls in classes:
         cls_dir = data_dir / cls
-        files = list(cls_dir.glob("*.jpg")) + list(cls_dir.glob("*.png")) + list(cls_dir.glob("*.JPG"))
+        # Use set to avoid duplicates on case-insensitive systems
+        files_set = set(cls_dir.glob("*.jpg")).union(set(cls_dir.glob("*.png"))).union(set(cls_dir.glob("*.JPG"))).union(set(cls_dir.glob("*.JPEG"))).union(set(cls_dir.glob("*.jpeg")))
+        files = list(files_set)
+        
         print(f"Processing class '{cls}': {len(files)} images...")
+        total_physical += len(files)
         
         for idx, img_path in enumerate(files):
             try:
@@ -52,8 +59,15 @@ def build_dataset(data_dir=DATA_SUBSET_DIR):
                 X.append(f_vec)
                 y.append(cls)
                 image_paths.append(str(img_path))
+                total_extracted += 1
             except Exception as e:
                 print(f"  [!] Failed to process {img_path.name}: {e}")
+
+    print(f"\nPhysical image files found: {total_physical}")
+    print(f"Samples passed to feature extraction: {total_extracted}")
+    
+    # Ensure no duplicates in final path list
+    assert len(image_paths) == len(set(image_paths)), "Duplicate paths found in final list!"
 
     return np.array(X), np.array(y), feature_names_list if 'feature_names_list' in locals() else f_names, image_paths
 

@@ -9,11 +9,16 @@ data/plantdisease/
 data/plantvillage/
 *.zip
 *.tar.gz
+data/research_lab/
+data/subset/
+data/*.csv
+results/models/*.pkl
+!results/models/svm_All24_RBF.pkl
 
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.class
 .venv/
 env/
 venv/

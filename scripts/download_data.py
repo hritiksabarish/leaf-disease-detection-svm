@@ -4,10 +4,10 @@ import shutil
 import glob
 from pathlib import Path
 
-# Ensure Kaggle API token from user screenshot is set if not already present
-USER_KAGGLE_TOKEN = "KGAT_f011347da1d1258128435c90bb47842e"
-if "KAGGLE_API_TOKEN" not in os.environ:
-    os.environ["KAGGLE_API_TOKEN"] = USER_KAGGLE_TOKEN
+# Ensure Kaggle API token is not hardcoded
+USER_KAGGLE_TOKEN = ""
+# if "KAGGLE_API_TOKEN" not in os.environ:
+#     os.environ["KAGGLE_API_TOKEN"] = USER_KAGGLE_TOKEN
 
 TARGET_CLASSES = [
     "Tomato___Late_blight",
@@ -15,6 +15,13 @@ TARGET_CLASSES = [
     "Potato___Early_blight",
     "Potato___healthy"
 ]
+# Map target class names to their actual Kaggle folder name equivalents
+KAGGLE_DIR_MAPPING = {
+    "Tomato___Late_blight": "Tomato_Late_blight",
+    "Tomato___healthy": "Tomato_healthy",
+    "Potato___Early_blight": "Potato___Early_blight",
+    "Potato___healthy": "Potato___healthy"
+}
 MAX_IMAGES_PER_CLASS = 200
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -70,11 +77,13 @@ def extract_subset(source_path):
         cls_dst = SUBSET_DIR / cls
         cls_dst.mkdir(parents=True, exist_ok=True)
         
+        kaggle_name = KAGGLE_DIR_MAPPING.get(cls, cls)
+        
         # Search for class folder recursively inside source_path
-        found_folders = list(source_path.rglob(cls))
+        found_folders = list(source_path.rglob(kaggle_name))
         if not found_folders:
             # Try partial matching (case insensitive)
-            found_folders = [p for p in source_path.rglob("*") if p.is_dir() and cls.lower() in p.name.lower()]
+            found_folders = [p for p in source_path.rglob("*") if p.is_dir() and kaggle_name.lower() in p.name.lower()]
         
         if found_folders:
             src_folder = found_folders[0]
